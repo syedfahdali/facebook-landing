@@ -1,0 +1,145 @@
+{% extends "core/base.html" %}
+
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h1 class="mb-4">
+        Results for 
+        {% if campaign %}{{ campaign.name }}{% else %}<em>No campaign selected</em>{% endif %}
+    </h1>
+
+    <form method="get" action="{% url 'campaign_results' %}" class="mb-3">
+        <label for="campaignSelect">Select Campaign:</label>
+        <select name="campaign_id" id="campaignSelect" class="form-select" onchange="this.form.submit()">
+            {% for c in active_campaigns %}
+                <option value="{{ c.id }}" {% if c.id == campaign.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <div class="mb-3">
+        <a href="{% url 'campaign_list' %}" class="btn btn-secondary">Back</a>
+        
+        {% if campaign %}
+            <a href="{% url 'export_campaign_csv' campaign.id %}" class="btn btn-success">Export CSV</a>
+        {% else %}
+            <button class="btn btn-success" disabled>Export CSV</button>
+        {% endif %}
+
+        <!-- Removed the "Complete" button -->
+
+        <a href="{% url 'campaign_results' %}?campaign_id={{ campaign.id }}" class="btn btn-primary">Refresh</a>
+    </div>
+
+    <!-- Summary Cards Section -->
+    <div class="row text-center mb-5">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Email Sent</h6>
+                    <h3>{{ results.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Email Opened</h6>
+                    <h3>{{ external_stats.total_api_opens }}</h3>
+                    {% if external_stats.first_open_time and external_stats.last_open_time %}
+                        <small class="text-muted d-block mt-2">
+                            First: {{ external_stats.first_open_time|date:"Y-m-d h:i:s" }}<br>
+                            Last: {{ external_stats.last_open_time|date:"Y-m-d h:i:s" }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Removed "Clicked Link" and "Submitted Data" cards -->
+    </div>
+
+    <!-- Button to show campaign details -->
+    {% if campaign %}
+        <button class="btn btn-info" id="showDetailsButton" onclick="toggleCampaignDetails()">Show Details</button>
+    {% endif %}
+
+    <!-- Campaign details section, hidden by default -->
+    <div id="campaignDetails" style="display: none; margin-top: 30px;">
+        <h4>Campaign Details</h4>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Campaign Launch By</strong></td>
+                    <td>{{ campaign.user.username }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Campaign Launch Time</strong></td>
+                    <td>{{ campaign.launch_date|date:"Y-m-d H:i:s" }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Email Sent Time</strong></td>
+                    <td>{{ campaign.send_emails_by|date:"Y-m-d H:i:s" }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Email Sent To</strong></td>
+                    <td>
+                        {% for result in detailed_results %}
+                            <p>{{ result.recipient }}</p>
+                        {% empty %}
+                            <p>No emails sent yet.</p>
+                        {% endfor %}
+                    </td>
+                </tr>
+<tr>
+    <td><strong>Email Opened Times</strong></td>
+    <td>
+        {% for result in detailed_results %}
+            {% if result.email_opened %}
+                <p>{{ result.recipient }}:
+                    {% if result.open_times %}
+                        <!-- Display all open times -->
+                        {% for open_time in result.open_times %}
+                            Opened at {{ open_time|date:"Y-m-d H:i:s" }}<br>
+                        {% endfor %}
+                    {% else %}
+                        No open times recorded
+                    {% endif %}
+                </p>
+            {% else %}
+                <p>{{ result.recipient }}: Not opened</p>
+            {% endif %}
+        {% empty %}
+            <p>No emails opened yet.</p>
+        {% endfor %}
+    </td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+    // Toggle visibility of campaign details when the button is clicked
+    function toggleCampaignDetails() {
+        var detailsSection = document.getElementById("campaignDetails");
+        var button = document.getElementById("showDetailsButton");
+        if (detailsSection.style.display === "none") {
+            detailsSection.style.display = "block";
+            button.innerHTML = "Hide Details";
+        } else {
+            detailsSection.style.display = "none";
+            button.innerHTML = "Show Details";
+        }
+    }
+</script>
+
+{% endblock %}
