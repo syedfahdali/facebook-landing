@@ -1,0 +1,8 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+[[redirects]]
+  from = "/track-click"
+  to = "/.netlify/functions/track-click"
+  status = 200
